@@ -1,0 +1,60 @@
+name: Build and Release
+
+# 触发条件：只有推送到 v* 标签时触发（例如 v1.0, v2.3.1）
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # 定义三个平台的矩阵
+        include:
+          - os: windows-latest
+            artifact_name: ear-train.exe
+            asset_name: ear-train-windows.exe
+          - os: ubuntu-latest
+            artifact_name: ear-train
+            asset_name: ear-train-linux
+          - os: macos-latest
+            artifact_name: ear-train
+            asset_name: ear-train-macos
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' # 你可以根据需要修改 Python 版本
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          # 如果你有 requirements.txt，请取消下面这行的注释
+          # pip install -r requirements.txt
+
+      - name: Build with PyInstaller
+        # 使用你的基本参数 -F -w，并加上 -n 指定文件名
+        run: pyinstaller -F -w -n ear-train main.py
+
+      - name: Rename output file for Release
+        # 将生成的文件重命名，带上系统后缀，方便在 Release 中区分
+        shell: bash
+        run: |
+          cd dist
+          mv ${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/${{ matrix.asset_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
