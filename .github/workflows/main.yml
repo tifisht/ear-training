@@ -40,8 +40,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
-          # 如果你有 requirements.txt，请取消下面这行的注释
-          # pip install -r requirements.txt
+          pip install -r requirements.txt
 
       - name: Build with PyInstaller
         # 使用你的基本参数 -F -w，并加上 -n 指定文件名
